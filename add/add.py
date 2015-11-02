@@ -40,6 +40,9 @@ def get_name(soup):
 		return None
 	#get to correct descendent
 	name = name.find("h2").get_text()
+
+	#remove symbol from name
+	name = re.sub('\(\w*\)', '', name)[:-1]
 	return name
 
 
