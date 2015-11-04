@@ -5,7 +5,7 @@ from bs4 import BeautifulSoup
 #handles adding stocks to the database
 def add_stock(query):
 	#get symbol and industry from query
-	symbol = query.get('symbol')
+	symbol = query.get('symbol').upper()
 	industry = query.get('industry')
 	
 	#crawl to find company from symbol using beautifulsoup
@@ -13,10 +13,10 @@ def add_stock(query):
 
 	#return 404 if soup == none
 	if soup == None:
-		return create_json_error('404 NOT FOUND', 'cannot find symbol: ' + symbol)
+		return create_json_status('cannot find company with symbol: ' + symbol)
 	name = get_name(soup)
 	if name == None:
-		return create_json_error('404 NOT FOUND', 'cannot find symbol: ' + symbol)
+		return create_json_status('cannot find company with symbol: ' + symbol)
 	
 	#get website
 	profile_soup = get_soup("q/pr",symbol)
@@ -24,10 +24,16 @@ def add_stock(query):
 	
 	conn = mysqldb.connect(db='stock', user='root', passwd='password', host='localhost')
 	c = conn.cursor()
+	try:
+		c.execute("INSERT INTO Main VALUES (%s, %s, %s, %s)", (symbol, name, industry, website))
+	except mysqldb.IntegrityError as e:
+		return create_json_status("error: " + str(e))
+	conn.commit()
+	output = c.fetchall()
+	c.close()
+	conn.close()
 	data = {}
-	data['status'] = True
-	data['name'] = str(name)
-	data['website'] = str(website)
+	data['status'] = 'success!'
 	return json.dumps(data)
 
 def get_soup(page, symbol):
@@ -56,8 +62,7 @@ def get_website(soup):
 	return website.get_text()
 
 
-def create_json_error(status,reason):
+def create_json_status(status):
 	data = {}
 	data['status'] = status
-	data['reason'] = reason
 	return json.dumps(data)
