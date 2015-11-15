@@ -6,7 +6,6 @@ from bs4 import BeautifulSoup
 def add_stock(query):
 	#get symbol and industry from query
 	symbol = query.get('symbol').upper()
-	industry = query.get('industry')
 	
 	#crawl to find company from symbol using beautifulsoup
 	soup = get_soup("q", symbol)
@@ -21,6 +20,10 @@ def add_stock(query):
 	#get website
 	profile_soup = get_soup("q/pr",symbol)
 	website = get_website(profile_soup)
+
+	#get industry
+	industry_soup = get_soup("q/in",symbol)
+	industry = get_industry(industry_soup)
 	
 	conn = mysqldb.connect(db='stock', user='root', passwd='password', host='localhost')
 	c = conn.cursor()
@@ -60,6 +63,12 @@ def get_website(soup):
 	#get company website, cannot fail as all public companies have websites
 	website = soup.find("td", {"class":"yfnc_modtitlew1"}).findAll("a", href=True)[1]
 	return website.get_text()
+
+def get_industry(soup):
+	#get company industry, cannot fail as all companies are part of an industry
+	industry = soup.find("td", {"class":"yfnc_tabledata1"})
+	industry = industry.find("a").getText()
+	return industry
 
 
 def create_json_status(status):
